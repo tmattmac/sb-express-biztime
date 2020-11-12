@@ -4,10 +4,15 @@
 const express = require("express");
 
 const app = express();
-const ExpressError = require("./expressError")
+const ExpressError = require("./expressError");
+const companies = require('./routes/companies');
+const invoices = require('./routes/invoices');
 
 app.use(express.json());
 
+/** routes */
+app.use('/companies', companies);
+app.use('/invoices', invoices);
 
 /** 404 handler */
 
@@ -22,7 +27,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500);
 
   return res.json({
-    error: err,
+    status: err.status || 500,
     message: err.message
   });
 });
