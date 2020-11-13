@@ -10,7 +10,6 @@ router.get('/', async (req, res, next) => {
             SELECT id, comp_code
             FROM invoices;
         `);
-        console.log(invoices);
         return res.json({ invoices });
     } catch (e) {
         return next(e);
@@ -53,13 +52,33 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
     try {
         const id = req.params.id;
-        const { amt } = req.body;
-        const { rows: [invoice] } = await db.query(`
-            UPDATE invoices
-            SET amt = $1
-            WHERE id = $2
-            RETURNING id, comp_code, amt, paid, add_date, paid_date;
-        `, [amt, id]);
+        const { amt, paid } = req.body;
+        let query;
+        if (paid === true) {
+            query = `
+                UPDATE invoices
+                SET amt = $1, paid = TRUE, paid_date = NOW()
+                WHERE id = $2
+                RETURNING id, comp_code, amt, paid, add_date, paid_date;
+            `;
+        }
+        else if (paid === false) {
+            query = `
+                UPDATE invoices
+                SET amt = $1, paid = FALSE, paid_date = NULL
+                WHERE id = $2
+                RETURNING id, comp_code, amt, paid, add_date, paid_date;
+            `;
+        }
+        else {
+            query = `
+                UPDATE invoices
+                SET amt = $1
+                WHERE id = $2
+                RETURNING id, comp_code, amt, paid, add_date, paid_date;
+            `;
+        }
+        const { rows: [invoice] } = await db.query(query, [amt, id]);
         if (!invoice)
             throw new ExpressError(`Invoice with id '${id}' not found`, 404);
         return res.json({ invoice });
